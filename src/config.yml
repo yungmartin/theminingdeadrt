@@ -1,0 +1,28 @@
+Guns:
+  Barrett:
+    Damage: 20.0
+    DamageHS: 25.0
+  Deagle:
+    Damage: 15.0
+    DamageHS: 20.0
+  Spas:
+    Damage: 15.0
+    DamageHS: 20.0
+  GoldenDeagle:
+    Damage: 15.0
+    DamageHS: 20.0
+  GoldenBarrett:
+    Damage: 15.5
+    DamageHS: 20.0
+  PinkPrecision:
+    Damage: 15.5
+    DamageHS: 20.0
+  Katana:
+    Damage: 15.0
+SpawnLocation:
+  World: 'world'
+  X: 1676
+  Y: 74
+  Z: 574
+  Pitch: 179.3
+  Yaw: -1.6

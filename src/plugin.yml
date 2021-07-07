@@ -1,0 +1,9 @@
+name: TMD
+version: 1.0
+main: me.martin.main.Main
+commands:
+  heals:
+  gun:
+  config:
+  armor:
+  sz:
