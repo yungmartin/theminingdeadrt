@@ -186,8 +186,18 @@ public class Painkillers implements Listener {
 
         if(painkillersUseCooldown.contains(player)){
 
-            PacketPlayOutChat healingMessage = new PacketPlayOutChat(new ChatComponentText("§cHealing cancelled"), (byte) 2);
-            ((CraftPlayer) player).getHandle().playerConnection.sendPacket(healingMessage);
+            new BukkitRunnable(){
+
+
+                @Override
+                public void run() {
+
+                    PacketPlayOutChat healingMessage = new PacketPlayOutChat(new ChatComponentText("§cHealing cancelled"), (byte) 2);
+                    ((CraftPlayer) player).getHandle().playerConnection.sendPacket(healingMessage);
+
+                }
+            }.runTaskLater(main, 1);
+
             painkillersUseCooldown.remove(player);
             player.setItemInHand(Painkillers(player));
 

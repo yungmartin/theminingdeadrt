@@ -13,6 +13,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
@@ -173,11 +175,53 @@ public class Bandages implements Listener {
 
         if(bandageUseCooldown.contains(player)){
 
-            PacketPlayOutChat healingMessage = new PacketPlayOutChat(new ChatComponentText("§cHealing cancelled"), (byte) 2);
-            ((CraftPlayer) player).getHandle().playerConnection.sendPacket(healingMessage);
+            new BukkitRunnable(){
+
+
+                @Override
+                public void run() {
+
+                    PacketPlayOutChat healingMessage = new PacketPlayOutChat(new ChatComponentText("§cHealing cancelled"), (byte) 2);
+                    ((CraftPlayer) player).getHandle().playerConnection.sendPacket(healingMessage);
+
+                }
+            }.runTaskLater(main, 1);
+
             bandageUseCooldown.remove(player);
             player.setItemInHand(bandageWrapped(player));
 
+        }
+
+    }
+
+    @EventHandler
+    public void onItemDrop(PlayerDropItemEvent e){
+
+        Player player = e.getPlayer();
+
+        ItemStack droppedItem = e.getItemDrop().getItemStack();
+
+        if(bandageUseCooldown.contains(player)){
+
+                e.setCancelled(true);
+
+        }
+
+    }
+
+    @EventHandler
+    public void inventoryClickEvent(InventoryClickEvent e){
+
+        Player player = (Player) e.getWhoClicked();
+
+        ItemStack clickedItem = e.getCursor();
+
+        if(bandageUseCooldown.contains(player)){
+            if(clickedItem.getType().equals(Material.NETHER_WARTS)){
+
+                e.setCancelled(true);
+
+            }
         }
 
     }

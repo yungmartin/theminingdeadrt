@@ -3,6 +3,7 @@ package me.martin.main;
 import me.martin.main.Armor.ArmorEvent;
 import me.martin.main.ChatUtils.ChatFormat;
 import me.martin.main.ChatUtils.Join;
+import me.martin.main.CombatTag.CombatTag;
 import me.martin.main.Commands.*;
 import me.martin.main.Deaths.Deaths;
 import me.martin.main.Guns.*;
@@ -63,6 +64,7 @@ public class Main extends JavaPlugin {
         pluginManager.registerEvents(new SzGUI(), this);
         pluginManager.registerEvents(new ChatFormat(), this);
         pluginManager.registerEvents(new Join(), this);
+        pluginManager.registerEvents(new CombatTag(this), this);
 
     }
 

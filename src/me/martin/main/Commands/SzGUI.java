@@ -12,6 +12,7 @@ public class SzGUI implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent e){
+
         if(e.getClickedInventory().getTitle().equalsIgnoreCase(ChatColor.DARK_GRAY + "Safezones")){
             e.setCancelled(true);
 

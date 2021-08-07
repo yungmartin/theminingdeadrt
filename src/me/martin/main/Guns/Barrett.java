@@ -1,16 +1,17 @@
 package me.martin.main.Guns;
 
 import de.tr7zw.nbtapi.NBTItem;
+import me.martin.main.Guns.RayTrace.BoundingBox;
+import me.martin.main.Guns.RayTrace.RayTrace;
 import me.martin.main.Main;
 import me.martin.main.Utils.Utils;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.*;
 import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
-import org.bukkit.entity.Arrow;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
+import org.bukkit.entity.*;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -25,10 +26,8 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Barrett implements Listener {
     Main main;
@@ -51,6 +50,8 @@ public class Barrett implements Listener {
 
     HashMap<Player, ItemStack> scopeHelmet = new HashMap<>();
 
+    HashMap<Player, Integer> rayTraceLength = new HashMap<>();
+
     @EventHandler
     public void shoot(PlayerInteractEvent e) {
 
@@ -67,147 +68,271 @@ public class Barrett implements Listener {
                 currentAmmo = gun.getInteger("ammo");
 
                 if (!comboDelay.contains(shooter)) {
-                if (gun.hasKey("ammo")) {
-                    if (gun.getInteger("ammo") > 0) {
-                        if (!shootCooldown.contains(shooter)) {
-                            if (!reload.contains(shooter)) {
+                    if (gun.hasKey("ammo")) {
+                        if (gun.getInteger("ammo") > 0) {
+                            if (!shootCooldown.contains(shooter)) {
+                                if (!reload.contains(shooter)) {
 
-                                    Projectile bullet = shooter.launchProjectile(Arrow.class);
+                                   /* Projectile bullet = shooter.launchProjectile(Egg.class);
                                     bullet.setShooter(shooter);
-                                    bullet.setVelocity(shooter.getEyeLocation().getDirection().multiply(50.0));
+                                    bullet.setVelocity(shooter.getEyeLocation().getDirection().multiply(50.0));*/
 
-                                    shooter.getWorld().playSound(shooter.getLocation(), Sound.BLAZE_DEATH, 1, 1);
+                                    //Passtrough materials logic
+                                    Vector Calcdirection = shooter.getEyeLocation().getDirection();
 
-                                    for (Player onlinePlayers : Bukkit.getOnlinePlayers()) {
+                                    int shootDistance = 150;
 
-                                        PacketPlayOutEntityDestroy invisBullet = new PacketPlayOutEntityDestroy(bullet.getEntityId());
-                                        ((CraftPlayer) onlinePlayers).getHandle().playerConnection.sendPacket(invisBullet);
+                                    Location startLoc = shooter.getEyeLocation();
+
+                                    for (int i = 0; i < shootDistance; i++) {
+
+                                        Vector blockVec = Calcdirection.clone().multiply(i);
+
+                                        Location blockLoc = startLoc.clone().add(blockVec);
+
+                                        if (blockLoc.getBlock().getType() != Material.AIR
+                                                && blockLoc.getBlock().getType() != Material.IRON_FENCE
+                                                && blockLoc.getBlock().getType() != Material.LONG_GRASS
+                                                && blockLoc.getBlock().getType() != Material.WEB
+                                                && blockLoc.getBlock().getType() != Material.LADDER) {
+
+                                            rayTraceLength.put(shooter, i);
+                                            break;
+                                        }
+
                                     }
 
-                                    if(scope.contains(shooter)){
+                                    //RayTracing
+                                    RayTrace rayTrace = new RayTrace(shooter.getEyeLocation().toVector(), shooter.getEyeLocation().getDirection());
 
-                                        PacketPlayOutPosition packet = new PacketPlayOutPosition(0.0, 0.0, 0.0, 0.0f, - 7.5f, this.teleportFlags);
-                                        ((CraftPlayer) shooter).getHandle().playerConnection.sendPacket(packet);
+                                    ArrayList<Vector> positions = rayTrace.traverse(rayTraceLength.get(shooter), 0.1);
 
-                                    }
+                                    for (int i = 0; i < positions.size(); i++) {
 
-                                    for (double i = 2; i < 30; i += 3) {
+                                        Location position = positions.get(i).toLocation(shooter.getWorld());
 
-                                        Location bulletLocation = shooter.getEyeLocation();
-                                        Vector direction = bulletLocation.getDirection();
-                                        bulletLocation.add(direction.multiply(i));
+                                        List<org.bukkit.entity.Entity> entities = shooter.getWorld().getNearbyEntities(position, 0.1, 0.1, 0.1).stream().filter(entity -> (entity instanceof Player)).collect(Collectors.toList());
 
-                                        for (Player onlinePlayers : Bukkit.getOnlinePlayers()) {
+                                        for (Entity entity : entities) {
+                                            if (entity instanceof Player) {
+                                                Player victim = ((Player) entity).getPlayer();
 
-                                            PacketPlayOutWorldParticles smoke = new PacketPlayOutWorldParticles(EnumParticle.SMOKE_NORMAL, false, (float) bulletLocation.getX(), (float) bulletLocation.getY(), (float) bulletLocation.getZ(), 0, 0, 0, 0, 2, 0, 0, 0);
-                                            ((CraftPlayer) onlinePlayers).getHandle().playerConnection.sendPacket(smoke);
+                                                double victimY = victim.getLocation().getY();
 
+                                                double rayTraceY = position.getY();
+
+                                                if (rayTrace.intersects(new BoundingBox(victim), rayTraceLength.get(shooter), 0.1)) {
+
+                                                    if (victim != shooter) {
+                                                        if (rayTraceY - victimY > 1.35D) {
+                                                            victim.damage(main.getConfig().getDouble("Guns.Barrett.DamageHS"), shooter);
+                                                            shooter.playSound(shooter.getLocation(), Sound.NOTE_BASS, 1, 1);
+
+                                                            victim.setMaximumNoDamageTicks(10);
+                                                            victim.setNoDamageTicks(Integer.MAX_VALUE);
+
+                                                            victim.setVelocity(shooter.getLocation().getDirection().setY(0.9).normalize().multiply(0.3));
+
+                                                            new BukkitRunnable(){
+
+                                                                @Override
+                                                                public void run() {
+
+                                                                    victim.setMaximumNoDamageTicks(20);
+                                                                    victim.setNoDamageTicks(Integer.MIN_VALUE);
+
+                                                                }
+                                                            }.runTaskLater(main, 1);
+
+                                                        } else {
+                                                            victim.damage(main.getConfig().getDouble("Guns.Barrett.Damage"), shooter);
+                                                            shooter.playSound(shooter.getLocation(), Sound.NOTE_BASS_DRUM, 1, 1);
+
+                                                            victim.setMaximumNoDamageTicks(10);
+                                                            victim.setNoDamageTicks(Integer.MAX_VALUE);
+
+                                                            victim.setVelocity(shooter.getLocation().getDirection().setY(0.9).normalize().multiply(0.3));
+
+                                                            new BukkitRunnable(){
+
+                                                                @Override
+                                                                public void run() {
+
+                                                                    victim.setMaximumNoDamageTicks(20);
+                                                                    victim.setNoDamageTicks(Integer.MIN_VALUE);
+
+                                                                }
+                                                            }.runTaskLater(main, 1);
+
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
+                                }
 
-                                for(int i = 3; i < 4; i++){
+                                            shooter.getWorld().playSound(shooter.getLocation(), Sound.BLAZE_DEATH, 1, 1);
 
-                                    Location bulletLocation = shooter.getEyeLocation();
-                                    Vector direction = bulletLocation.getDirection();
-                                    bulletLocation.add(direction.multiply(i));
+                                            if (scope.contains(shooter)) {
 
-                                    for (Player onlinePlayers : Bukkit.getOnlinePlayers()) {
+                                                PacketPlayOutPosition packet = new PacketPlayOutPosition(0.0, 0.0, 0.0, +1.7f, -7.5f, this.teleportFlags);
+                                                ((CraftPlayer) shooter).getHandle().playerConnection.sendPacket(packet);
 
-                                        PacketPlayOutWorldParticles smoke = new PacketPlayOutWorldParticles(EnumParticle.FIREWORKS_SPARK, false, (float) bulletLocation.getX(), (float) bulletLocation.getY(), (float) bulletLocation.getZ(), 0, 0, 0, 0, 2, 0, 0, 0);
-                                        ((CraftPlayer) onlinePlayers).getHandle().playerConnection.sendPacket(smoke);
-                                        PacketPlayOutWorldParticles smoke2 = new PacketPlayOutWorldParticles(EnumParticle.VILLAGER_ANGRY, false, (float) bulletLocation.getX(), (float) bulletLocation.getY(), (float) bulletLocation.getZ(), 0, 0, 0, 0, 2, 0, 0, 0);
-                                        ((CraftPlayer) onlinePlayers).getHandle().playerConnection.sendPacket(smoke2);
+                                            }
+
+                                            for (double i = 2; i < 30; i += 3) {
+
+                                                Location bulletLocation = shooter.getEyeLocation();
+                                                Vector direction = bulletLocation.getDirection();
+                                                bulletLocation.add(direction.multiply(i));
+
+                                                for (Player onlinePlayers : Bukkit.getOnlinePlayers()) {
+
+                                                    PacketPlayOutWorldParticles smoke = new PacketPlayOutWorldParticles(EnumParticle.SMOKE_NORMAL, false, (float) bulletLocation.getX(), (float) bulletLocation.getY(), (float) bulletLocation.getZ(), 0, 0, 0, 0, 2, 0, 0, 0);
+                                                    ((CraftPlayer) onlinePlayers).getHandle().playerConnection.sendPacket(smoke);
+
+                                                }
+                                            }
+
+                                            for (int i = 1; i < 2d; i++) {
+
+                                                Location bulletLocation = shooter.getEyeLocation();
+                                                Vector direction = bulletLocation.getDirection();
+                                                bulletLocation.add(direction.multiply(i));
+
+                                                for (Player onlinePlayers : Bukkit.getOnlinePlayers()) {
+
+                                                    PacketPlayOutWorldParticles smoke = new PacketPlayOutWorldParticles(EnumParticle.FIREWORKS_SPARK, false, (float) bulletLocation.getX(), (float) bulletLocation.getY(), (float) bulletLocation.getZ(), 0, 0, 0, 0, 2, 0, 0, 0);
+                                                    ((CraftPlayer) onlinePlayers).getHandle().playerConnection.sendPacket(smoke);
+                                                    PacketPlayOutWorldParticles smoke2 = new PacketPlayOutWorldParticles(EnumParticle.VILLAGER_ANGRY, false, (float) bulletLocation.getX(), (float) bulletLocation.getY(), (float) bulletLocation.getZ(), 0, 0, 0, 0, 2, 0, 0, 0);
+                                                    ((CraftPlayer) onlinePlayers).getHandle().playerConnection.sendPacket(smoke2);
+
+                                                }
+
+                                            }
+
+                                            currentAmmo--;
+                                            gun.setInteger("ammo", currentAmmo);
+
+                                            shooter.setItemInHand(gun.getItem());
+                                            shooter.updateInventory();
+
+                                            Utils.actionBarMessage(shooter, ("§e" + currentAmmo + "⑤"));
+
+                                            shootCooldown.add(shooter);
+
+                                            new BukkitRunnable() {
+
+
+                                                @Override
+                                                public void run() {
+
+                                                    shootCooldown.remove(shooter);
+
+                                                }
+                                            }.runTaskLater(main, 22);
+
+
+                                        } else{
+
+                                            reload.remove(shooter);
+
+                                        }
+
 
                                     }
 
-                                }
+                                } else if (e.getAction().equals(Action.RIGHT_CLICK_BLOCK) || e.getAction().equals(Action.RIGHT_CLICK_AIR) && shooter.getItemInHand().getType().equals(Material.STONE_AXE) && currentAmmo == 0 && !(shooter.getInventory().contains(Material.SLIME_BALL))) {
 
-                                    currentAmmo--;
-                                    gun.setInteger("ammo", currentAmmo);
+                                    PacketPlayOutChat noammo = new PacketPlayOutChat(new ChatComponentText("§e" + "0" + "⑤"), (byte) 2);
+                                    ((CraftPlayer) shooter).getHandle().playerConnection.sendPacket(noammo);
 
-                                    shooter.setItemInHand(gun.getItem());
-                                    shooter.updateInventory();
+                                    shooter.playSound(shooter.getLocation(), Sound.ENDERDRAGON_DEATH, 1, 1);
+                                } else if (e.getAction().equals(Action.RIGHT_CLICK_BLOCK) || e.getAction().equals(Action.RIGHT_CLICK_AIR) && shooter.getItemInHand().getType().equals(Material.STONE_AXE) && currentAmmo == 0 && !reload.contains(shooter)) {
 
-                                    Utils.actionBarMessage(shooter, ("§e" + currentAmmo + "⑤"));
+                                    reload.add(shooter);
 
-                                    shootCooldown.add(shooter);
+                                    if (reload.contains(shooter)) {
+
+
+                                    }
+
+                                    shooter.playSound(shooter.getLocation(), Sound.IRONGOLEM_DEATH, 1, 1);
 
                                     new BukkitRunnable() {
 
+                                        double reloadTime = 2.0;
 
                                         @Override
                                         public void run() {
 
-                                            shootCooldown.remove(shooter);
+                                            if (reload.contains(shooter) && shooter.getItemInHand().getType().equals(Material.STONE_AXE)) {
+                                                if (reloadTime <= 0.1) {
 
+                                                    gun.setInteger("ammo", 10);
+                                                    shooter.setItemInHand(gun.getItem());
+
+                                                    PacketPlayOutChat actionBarAmmo = new PacketPlayOutChat(new ChatComponentText("§e" + gun.getInteger("ammo") + "⑤"), (byte) 2);
+                                                    ((CraftPlayer) shooter).getHandle().playerConnection.sendPacket(actionBarAmmo);
+
+                                                    reload.remove(shooter);
+
+                                                    this.cancel();
+                                                } else {
+
+                                                    reloadTime -= 0.1;
+                                                    PacketPlayOutChat reloading = new PacketPlayOutChat(new ChatComponentText("§7§oReloading... " + String.format("%.1f", reloadTime) + "§7§os "), (byte) 2);
+                                                    ((CraftPlayer) shooter).getHandle().playerConnection.sendPacket(reloading);
+
+                                                }
+                                            } else {
+
+                                                this.cancel();
+
+                                            }
                                         }
-                                    }.runTaskLater(main, 22);
-
-
-                                }else{
-
-                                reload.remove(shooter);
-
-                            }
-
-
-                            }
-
-                        } else if (e.getAction().equals(Action.RIGHT_CLICK_BLOCK) || e.getAction().equals(Action.RIGHT_CLICK_AIR) && shooter.getItemInHand().getType().equals(Material.STONE_AXE) && currentAmmo == 0 && !(shooter.getInventory().contains(Material.SLIME_BALL))) {
-
-                            PacketPlayOutChat noammo = new PacketPlayOutChat(new ChatComponentText("§e" + "0" + "⑤"), (byte) 2);
-                            ((CraftPlayer) shooter).getHandle().playerConnection.sendPacket(noammo);
-
-                            shooter.playSound(shooter.getLocation(), Sound.ENDERDRAGON_DEATH, 1, 1);
-                        } else if (e.getAction().equals(Action.RIGHT_CLICK_BLOCK) || e.getAction().equals(Action.RIGHT_CLICK_AIR) && shooter.getItemInHand().getType().equals(Material.STONE_AXE) && currentAmmo == 0 && !reload.contains(shooter)) {
-
-                            reload.add(shooter);
-
-                            if (reload.contains(shooter)) {
-
-
-                            }
-
-                            shooter.playSound(shooter.getLocation(), Sound.IRONGOLEM_DEATH, 1, 1);
-
-                            new BukkitRunnable() {
-
-                                double reloadTime = 2.0;
-
-                                @Override
-                                public void run() {
-
-                                    if (reload.contains(shooter) && shooter.getItemInHand().getType().equals(Material.STONE_AXE)) {
-                                        if (reloadTime <= 0.1) {
-
-                                            gun.setInteger("ammo", 10);
-                                            shooter.setItemInHand(gun.getItem());
-
-                                            PacketPlayOutChat actionBarAmmo = new PacketPlayOutChat(new ChatComponentText("§e" + gun.getInteger("ammo") + "⑤"), (byte) 2);
-                                            ((CraftPlayer) shooter).getHandle().playerConnection.sendPacket(actionBarAmmo);
-
-                                            reload.remove(shooter);
-
-                                            this.cancel();
-                                        } else {
-
-                                            reloadTime -= 0.1;
-                                            PacketPlayOutChat reloading = new PacketPlayOutChat(new ChatComponentText("§7§oReloading... " + String.format("%.1f", reloadTime) + "§7§os "), (byte) 2);
-                                            ((CraftPlayer) shooter).getHandle().playerConnection.sendPacket(reloading);
-
-                                        }
-                                    } else {
-
-                                        this.cancel();
-
-                                    }
+                                    }.runTaskTimer(main, 0, 2);
                                 }
-                            }.runTaskTimer(main, 0, 2);
+                            }
                         }
                     }
                 }
+
+
+
+    @EventHandler
+    public void knockback(EntityDamageByEntityEvent e){
+
+        if(e.getDamager() instanceof Egg){
+
+            Egg knockback = (Egg) e.getDamager();
+
+            if(knockback.getShooter() instanceof Player){
+
+                if(e.getEntity() instanceof Player){
+
+                    Player victim = (Player) e.getEntity();
+
+                    e.setDamage(0);
+
+                    new BukkitRunnable(){
+
+
+                        @Override
+                        public void run() {
+
+                            victim.setVelocity(victim.getVelocity().multiply(0.85));
+
+                        }
+                    }.runTaskLater(main, 1);
+
+                }
+
             }
+
         }
+
     }
 
     @EventHandler
@@ -282,84 +407,6 @@ public class Barrett implements Listener {
 
     }
 
-    @EventHandler(ignoreCancelled = true)
-    public void damage(EntityDamageByEntityEvent e){
-
-        double damage = main.getConfig().getDouble("Guns.Barrett.Damage");
-
-        double damagehs = main.getConfig().getDouble("Guns.Barrett.DamageHS");
-
-        if(e.getDamager() instanceof Arrow){
-
-            Arrow bullet = (Arrow)e.getDamager();
-
-            if(bullet.getShooter() instanceof Player){
-
-            Player shooter = (Player) bullet.getShooter();
-
-            if(e.getEntity() instanceof Player) {
-
-                Player victim = (Player) e.getEntity();
-
-                if (bullet.getShooter() instanceof Player) {
-                    if (shooter.getItemInHand().getType().equals(Material.STONE_AXE)) {
-                        if (shooter.getLocation().getPitch() > -0.5) {
-
-                            e.setDamage(damage);
-
-                            victim.setMaximumNoDamageTicks(10);
-
-                            shooter.playSound(shooter.getLocation(), Sound.NOTE_BASS_DRUM, 1, 1);
-
-                            for(Player onlinePlayers : Bukkit.getOnlinePlayers()){
-
-                                ((CraftPlayer)onlinePlayers).getHandle().getDataWatcher().watch(9 ,(byte) 0);
-
-                            }
-
-                            new BukkitRunnable() {
-
-
-                                @Override
-                                public void run() {
-
-                                    victim.setVelocity(victim.getVelocity().multiply(0.8));
-                                    victim.setMaximumNoDamageTicks(20);
-
-                                }
-                            }.runTaskLater(main, 1);
-
-                        }else {
-
-                            e.setDamage(damagehs);
-
-                            victim.setMaximumNoDamageTicks(10);
-
-                            shooter.playSound(shooter.getLocation(), Sound.NOTE_BASS, 1, 1);
-
-                            new BukkitRunnable() {
-
-
-                                @Override
-                                public void run() {
-
-                                    victim.setVelocity(victim.getVelocity().multiply(0.8));
-                                    victim.setMaximumNoDamageTicks(20);
-
-                                }
-                            }.runTaskLater(main, 1);
-
-                        }
-                    }
-
-                }
-            }
-            }
-
-        }
-
-    }
-
     @EventHandler
     public void scope(PlayerToggleSneakEvent e){
 
@@ -408,6 +455,8 @@ public class Barrett implements Listener {
 
         Player player = e.getPlayer();
 
+        int comboDelayTime = main.getConfig().getInt("Guns.Barrett.ComboDelay");
+
         reload.remove(player);
 
         if(player.getInventory().getItem(e.getNewSlot()) != null) {
@@ -432,7 +481,7 @@ public class Barrett implements Listener {
                             comboDelay.remove(player);
 
                         }
-                    }.runTaskLater(main, 5L);
+                    }.runTaskLater(main, comboDelayTime);
 
                 }
             }

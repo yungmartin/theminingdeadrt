@@ -2,21 +2,27 @@ Guns:
   Barrett:
     Damage: 20.0
     DamageHS: 25.0
+    ComboDelay: 5
   Deagle:
     Damage: 15.0
     DamageHS: 20.0
+    ComboDelay: 5
   Spas:
     Damage: 15.0
     DamageHS: 20.0
+    ComboDelay: 5
   GoldenDeagle:
     Damage: 15.0
     DamageHS: 20.0
+    ComboDelay: 5
   GoldenBarrett:
     Damage: 15.5
     DamageHS: 20.0
+    ComboDelay: 5
   PinkPrecision:
     Damage: 15.5
     DamageHS: 20.0
+    ComboDelay: 5
   Katana:
     Damage: 15.0
 SpawnLocation:

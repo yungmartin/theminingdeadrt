@@ -38,7 +38,15 @@ public class SBUpdate implements Listener {
 
         for(Player onlinePlayers : Bukkit.getOnlinePlayers()){
 
-            SBManager.displayScoreboard(onlinePlayers, SBManager.createScoreboard(onlinePlayers));
+            new BukkitRunnable(){
+
+                @Override
+                public void run() {
+
+                    SBManager.displayScoreboard(onlinePlayers, SBManager.createScoreboard(onlinePlayers));
+
+                }
+            }.runTaskLater(main, 1);
 
         }
 
@@ -55,10 +63,10 @@ public class SBUpdate implements Listener {
             @Override
             public void run() {
 
+                SBManager.displayScoreboard(player, SBManager.createScoreboard(player));
+
             }
         }.runTaskLater(main, 1);
-
-        SBManager.displayScoreboard(player, SBManager.createScoreboard(player));
 
     }
 
