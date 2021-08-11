@@ -108,7 +108,7 @@ public class PinkPrecision implements Listener {
 
                                         Location position = positions.get(i).toLocation(shooter.getWorld());
 
-                                        List<org.bukkit.entity.Entity> entities = shooter.getWorld().getNearbyEntities(position, 0, 0, 0).stream().filter(entity -> (entity instanceof Player)).collect(Collectors.toList());
+                                        List<org.bukkit.entity.Entity> entities = shooter.getWorld().getNearbyEntities(position, 0.25, 0.25, 0.25).stream().filter(entity -> (entity instanceof Player)).collect(Collectors.toList());
 
                                         for (Entity entity : entities) {
                                             if (entity instanceof Player) {

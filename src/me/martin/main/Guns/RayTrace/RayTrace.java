@@ -18,7 +18,7 @@ public class RayTrace {
     }
 
     //get a point on the raytrace at X blocks away
-    public Vector getPostion(double blocksAway) {
+    public Vector getPosition(double blocksAway) {
         return origin.clone().add(direction.clone().multiply(blocksAway));
     }
 
@@ -36,7 +36,7 @@ public class RayTrace {
     public ArrayList<Vector> traverse(double blocksAway, double accuracy) {
         ArrayList<Vector> positions = new ArrayList<>();
         for (double d = 0; d <= blocksAway; d += accuracy) {
-            positions.add(getPostion(d));
+            positions.add(getPosition(d));
         }
         return positions;
     }
@@ -100,7 +100,7 @@ public class RayTrace {
     //debug / effects
     public void highlight(World world, double blocksAway, double accuracy){
         for(Vector position : traverse(blocksAway,accuracy)){
-            world.playEffect(position.toLocation(world), Effect.COLOURED_DUST,0);
+            world.playEffect(position.toLocation(world), Effect.SMALL_SMOKE,0);
         }
     }
 

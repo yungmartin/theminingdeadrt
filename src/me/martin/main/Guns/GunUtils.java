@@ -10,10 +10,12 @@ import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class GunUtils implements Listener {
 
@@ -38,7 +40,7 @@ public class GunUtils implements Listener {
 
     }
 
-    /*@EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onGunHit(EntityDamageByEntityEvent e){
 
         if(e.getDamager() instanceof Player && e.getEntity() instanceof Player){
@@ -47,15 +49,16 @@ public class GunUtils implements Listener {
 
             Player victim = ((Player) e.getEntity()).getPlayer();
 
-            if(damager.getItemInHand().getType().equals(Material.STONE_AXE) || damager.getItemInHand().getType().equals(Material.WOOD_AXE)){
+            if(!(damager.getItemInHand().getType().equals(Material.STONE_AXE) || damager.getItemInHand().getType().equals(Material.IRON_AXE)
+            || damager.getItemInHand().getType().equals(Material.WOOD_AXE))) {
 
-                e.setDamage(1);
+                        victim.setVelocity(victim.getVelocity().multiply(2));
+
 
             }
-
         }
 
-    }*/
+    }
 
     @EventHandler
     public void gunSwitch(PlayerItemHeldEvent e){

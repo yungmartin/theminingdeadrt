@@ -16,6 +16,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -49,7 +50,11 @@ public class Spas implements Listener {
 
     HashMap<Player, Integer> rayTraceLength = new HashMap<>();
 
-    @EventHandler
+    Player victim;
+    double victimY;
+    double rayTraceY;
+
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void shoot(PlayerInteractEvent e) {
 
         Player shooter = e.getPlayer();
@@ -91,7 +96,8 @@ public class Spas implements Listener {
                                                 && blockLoc.getBlock().getType() != Material.IRON_FENCE
                                                 && blockLoc.getBlock().getType() != Material.LONG_GRASS
                                                 && blockLoc.getBlock().getType() != Material.WEB
-                                                && blockLoc.getBlock().getType() != Material.LADDER) {
+                                                && blockLoc.getBlock().getType() != Material.LADDER
+                                                && blockLoc.getBlock().getType() != Material.WATER) {
 
                                             rayTraceLength.put(shooter, i);
                                             break;
@@ -100,7 +106,7 @@ public class Spas implements Listener {
                                     }
 
                                     //RayTracing
-                                    RayTrace rayTrace = new RayTrace(shooter.getEyeLocation().toVector(), shooter.getEyeLocation().getDirection());
+                                    RayTrace rayTrace = new RayTrace(shooter.getEyeLocation().toVector(), shooter.getLocation().getDirection());
 
                                     ArrayList<Vector> positions = rayTrace.traverse(rayTraceLength.get(shooter), 0.1);
 
@@ -108,15 +114,18 @@ public class Spas implements Listener {
 
                                         Location position = positions.get(i).toLocation(shooter.getWorld());
 
-                                        List<org.bukkit.entity.Entity> entities = shooter.getWorld().getNearbyEntities(position, 0.1, 0.1, 0.1).stream().filter(entity -> (entity instanceof Player)).collect(Collectors.toList());
+                                        List<org.bukkit.entity.Entity> entities = shooter.getWorld().getNearbyEntities(position, 0.28, 0.28, 0.28).stream().filter(entity -> (entity instanceof Player)).collect(Collectors.toList());
 
                                         for (Entity entity : entities) {
                                             if (entity instanceof Player) {
-                                                Player victim = ((Player) entity).getPlayer();
+                                                victim = ((Player) entity).getPlayer();
 
-                                                double victimY = victim.getLocation().getY();
+                                                victimY = victim.getLocation().getY();
 
-                                                double rayTraceY = position.getY();
+                                                rayTraceY = position.getY();
+                                            }
+                                        }
+                                    }
 
                                                 if (rayTrace.intersects(new BoundingBox(victim), rayTraceLength.get(shooter), 0.1)) {
 
@@ -128,7 +137,7 @@ public class Spas implements Listener {
                                                             victim.setMaximumNoDamageTicks(10);
                                                             victim.setNoDamageTicks(Integer.MAX_VALUE);
 
-                                                            victim.setVelocity(shooter.getLocation().getDirection().setY(0.9).normalize().multiply(0.3));
+                                                            //victim.setVelocity(shooter.getLocation().getDirection().setY(1.1).normalize().multiply(0.3));
 
                                                             new BukkitRunnable(){
 
@@ -137,6 +146,8 @@ public class Spas implements Listener {
 
                                                                     victim.setMaximumNoDamageTicks(20);
                                                                     victim.setNoDamageTicks(Integer.MIN_VALUE);
+                                                                    //victim.setVelocity(shooter.getLocation().getDirection().setY(1.1).normalize().multiply(0.3));
+                                                                    victim.setVelocity(shooter.getLocation().getDirection().setY(0.7).normalize().multiply(1));
 
                                                                 }
                                                             }.runTaskLater(main, 1);
@@ -148,7 +159,7 @@ public class Spas implements Listener {
                                                             victim.setMaximumNoDamageTicks(10);
                                                             victim.setNoDamageTicks(Integer.MAX_VALUE);
 
-                                                            victim.setVelocity(shooter.getLocation().getDirection().setY(0.9).normalize().multiply(0.3));
+                                                            //victim.setVelocity(shooter.getLocation().getDirection().setY(1.1).normalize().multiply(0.3));
 
                                                             new BukkitRunnable(){
 
@@ -157,6 +168,8 @@ public class Spas implements Listener {
 
                                                                     victim.setMaximumNoDamageTicks(20);
                                                                     victim.setNoDamageTicks(Integer.MIN_VALUE);
+                                                                    //victim.setVelocity(shooter.getLocation().getDirection().setY(1.1).normalize().multiply(0.3));
+                                                                    victim.setVelocity(shooter.getLocation().getDirection().setY(0.7).normalize().multiply(1));
 
                                                                 }
                                                             }.runTaskLater(main, 1);
@@ -165,9 +178,6 @@ public class Spas implements Listener {
                                                     }
                                                 }
                                             }
-                                        }
-                                    }
-                                }
 
                                     shooter.getWorld().playSound(shooter.getLocation(), Sound.IRONGOLEM_THROW, 1, 1);
 
@@ -230,6 +240,7 @@ public class Spas implements Listener {
                                 } else {
 
                                     reload.remove(shooter);
+                                    Utils.actionBarMessage(shooter, ("§e" + currentAmmo + "⑧"));
 
                                 }
 

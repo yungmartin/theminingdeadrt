@@ -13,6 +13,7 @@ import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -52,7 +53,13 @@ public class Barrett implements Listener {
 
     HashMap<Player, Integer> rayTraceLength = new HashMap<>();
 
-    @EventHandler
+    Player victim;
+    double victimY;
+    double rayTraceY;
+
+    BoundingBox bb;
+
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void shoot(PlayerInteractEvent e) {
 
         Player shooter = e.getPlayer();
@@ -94,7 +101,8 @@ public class Barrett implements Listener {
                                                 && blockLoc.getBlock().getType() != Material.IRON_FENCE
                                                 && blockLoc.getBlock().getType() != Material.LONG_GRASS
                                                 && blockLoc.getBlock().getType() != Material.WEB
-                                                && blockLoc.getBlock().getType() != Material.LADDER) {
+                                                && blockLoc.getBlock().getType() != Material.LADDER
+                                                && blockLoc.getBlock().getType() != Material.WATER) {
 
                                             rayTraceLength.put(shooter, i);
                                             break;
@@ -103,7 +111,7 @@ public class Barrett implements Listener {
                                     }
 
                                     //RayTracing
-                                    RayTrace rayTrace = new RayTrace(shooter.getEyeLocation().toVector(), shooter.getEyeLocation().getDirection());
+                                    RayTrace rayTrace = new RayTrace(shooter.getEyeLocation().toVector(), shooter.getLocation().getDirection());
 
                                     ArrayList<Vector> positions = rayTrace.traverse(rayTraceLength.get(shooter), 0.1);
 
@@ -111,66 +119,73 @@ public class Barrett implements Listener {
 
                                         Location position = positions.get(i).toLocation(shooter.getWorld());
 
-                                        List<org.bukkit.entity.Entity> entities = shooter.getWorld().getNearbyEntities(position, 0.1, 0.1, 0.1).stream().filter(entity -> (entity instanceof Player)).collect(Collectors.toList());
+                                        List<org.bukkit.entity.Entity> entities = shooter.getWorld().getNearbyEntities(position, 0.28, 0.28, 0.28).stream().filter(entity -> (entity instanceof Player)).collect(Collectors.toList());
 
                                         for (Entity entity : entities) {
                                             if (entity instanceof Player) {
-                                                Player victim = ((Player) entity).getPlayer();
+                                                victim = ((Player) entity).getPlayer();
 
-                                                double victimY = victim.getLocation().getY();
+                                                victimY = victim.getLocation().getY();
 
-                                                double rayTraceY = position.getY();
+                                                bb = new BoundingBox(victim);
 
-                                                if (rayTrace.intersects(new BoundingBox(victim), rayTraceLength.get(shooter), 0.1)) {
+                                                rayTraceY = position.getY();
+                                            }
+                                        }
+                                    }
 
-                                                    if (victim != shooter) {
-                                                        if (rayTraceY - victimY > 1.35D) {
-                                                            victim.damage(main.getConfig().getDouble("Guns.Barrett.DamageHS"), shooter);
-                                                            shooter.playSound(shooter.getLocation(), Sound.NOTE_BASS, 1, 1);
+                                    if (rayTrace.intersects(bb, rayTraceLength.get(shooter), 0.1)) {
 
-                                                            victim.setMaximumNoDamageTicks(10);
-                                                            victim.setNoDamageTicks(Integer.MAX_VALUE);
+                                        if (victim != shooter) {
+                                            if (rayTraceY - victimY > 1.35D) {
+                                                victim.damage(main.getConfig().getDouble("Guns.Barrett.DamageHS"), shooter);
+                                                shooter.playSound(shooter.getLocation(), Sound.NOTE_BASS, 1, 1);
 
-                                                            victim.setVelocity(shooter.getLocation().getDirection().setY(0.9).normalize().multiply(0.3));
+                                                victim.setMaximumNoDamageTicks(10);
+                                                victim.setNoDamageTicks(Integer.MAX_VALUE);
 
-                                                            new BukkitRunnable(){
+                                               //victim.setVelocity(shooter.getLocation().getDirection().setY(1.1).normalize().multiply(0.3));
 
-                                                                @Override
-                                                                public void run() {
 
-                                                                    victim.setMaximumNoDamageTicks(20);
-                                                                    victim.setNoDamageTicks(Integer.MIN_VALUE);
+                                                new BukkitRunnable() {
 
-                                                                }
-                                                            }.runTaskLater(main, 1);
+                                                    @Override
+                                                    public void run() {
 
-                                                        } else {
-                                                            victim.damage(main.getConfig().getDouble("Guns.Barrett.Damage"), shooter);
-                                                            shooter.playSound(shooter.getLocation(), Sound.NOTE_BASS_DRUM, 1, 1);
+                                                        victim.setMaximumNoDamageTicks(20);
+                                                        victim.setNoDamageTicks(Integer.MIN_VALUE);
+                                                        victim.setVelocity(shooter.getLocation().getDirection().setY(0.7).normalize().multiply(1));
 
-                                                            victim.setMaximumNoDamageTicks(10);
-                                                            victim.setNoDamageTicks(Integer.MAX_VALUE);
-
-                                                            victim.setVelocity(shooter.getLocation().getDirection().setY(0.9).normalize().multiply(0.3));
-
-                                                            new BukkitRunnable(){
-
-                                                                @Override
-                                                                public void run() {
-
-                                                                    victim.setMaximumNoDamageTicks(20);
-                                                                    victim.setNoDamageTicks(Integer.MIN_VALUE);
-
-                                                                }
-                                                            }.runTaskLater(main, 1);
-
-                                                        }
                                                     }
-                                                }
+                                                }.runTaskLater(main, 1);
+
+                                            } else {
+                                                victim.damage(main.getConfig().getDouble("Guns.Barrett.Damage"), shooter);
+                                                shooter.playSound(shooter.getLocation(), Sound.NOTE_BASS_DRUM, 1, 1);
+
+                                                victim.setMaximumNoDamageTicks(10);
+                                                victim.setNoDamageTicks(Integer.MAX_VALUE);
+
+                                                //victim.setVelocity(shooter.getLocation().getDirection().setY(1.1).normalize().multiply(0.3));
+
+                                                new BukkitRunnable() {
+
+                                                    @Override
+                                                    public void run() {
+
+                                                        victim.setMaximumNoDamageTicks(20);
+                                                        victim.setNoDamageTicks(Integer.MIN_VALUE);
+                                                        victim.setVelocity(shooter.getLocation().getDirection().setY(0.7).normalize().multiply(1));
+
+                                                    }
+                                                }.runTaskLater(main, 1);
                                             }
                                         }
                                     }
                                 }
+
+
+
 
                                             shooter.getWorld().playSound(shooter.getLocation(), Sound.BLAZE_DEATH, 1, 1);
 
@@ -237,6 +252,7 @@ public class Barrett implements Listener {
                                         } else{
 
                                             reload.remove(shooter);
+                                            Utils.actionBarMessage(shooter, ("§e" + currentAmmo + "⑤"));
 
                                         }
 

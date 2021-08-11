@@ -30,7 +30,11 @@ public class Katana implements Listener {
 
             Player damager = ((Player) e.getDamager()).getPlayer();
 
-            if(damager.getItemInHand() != null){
+            if(damager.getItemInHand() == null) {
+
+                return;
+
+            } else{
 
             NBTItem gun = new NBTItem(damager.getItemInHand());
 
@@ -58,7 +62,6 @@ public class Katana implements Listener {
                 }
             }
             }
-
         }
 
     }

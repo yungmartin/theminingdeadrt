@@ -68,7 +68,8 @@ public class GiveGuns implements CommandExecutor {
 
                     player.sendMessage(Utils.chatColor("&8[&a●&8] &7You got " + Guns.GoldenDeagle().getItemMeta().getDisplayName()));
 
-                    player.getInventory().addItem(Guns.GoldenDeagle());
+                    //player.getInventory().addItem(Guns.GoldenDeagle());
+                    player.sendMessage(Utils.chatColor("&8[&c●&8] &7Legends are currently unavailable!"));
 
                 }
 
@@ -76,7 +77,8 @@ public class GiveGuns implements CommandExecutor {
 
                     player.sendMessage(Utils.chatColor("&8[&a●&8] &7You got " + Guns.GoldenBarrett().getItemMeta().getDisplayName()));
 
-                    player.getInventory().addItem(Guns.GoldenBarrett());
+                    //player.getInventory().addItem(Guns.GoldenBarrett());
+                    player.sendMessage(Utils.chatColor("&8[&c●&8] &7Legends are currently unavailable!"));
 
                 }
 
@@ -92,7 +94,8 @@ public class GiveGuns implements CommandExecutor {
 
                     player.sendMessage(Utils.chatColor("&8[&a●&8] &7You got " + Guns.PinkPrecision().getItemMeta().getDisplayName()));
 
-                    player.getInventory().addItem(Guns.PinkPrecision());
+                    //player.getInventory().addItem(Guns.PinkPrecision());
+                    player.sendMessage(Utils.chatColor("&8[&c●&8] &7Legends are currently unavailable!"));
 
                 }
 

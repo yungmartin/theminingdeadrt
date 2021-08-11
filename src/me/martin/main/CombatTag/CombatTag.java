@@ -26,7 +26,7 @@ public class CombatTag implements Listener {
 
     HashSet<Player> combatLog = new HashSet<>();
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void combatTag(EntityDamageByEntityEvent e){
 
         if(e.getEntity() instanceof Player && e.getDamager() instanceof Player){
@@ -87,7 +87,7 @@ public class CombatTag implements Listener {
 
             e.setCancelled(true);
 
-            player.sendMessage(Utils.chatColor("&4[&c●&4] &7You can't type commands while combat tagged!"));
+            player.sendMessage(Utils.chatColor("&8[&c●&8] &7You can't type commands while combat tagged!"));
 
         }
 
